@@ -1,14 +1,23 @@
 <!-- index.html -->
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Air Pollution Predictor</title>
-    <link rel="stylesheet" href="css/style.css">
+  <title>Geospatial Map of the UK</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </head>
 <body>
-    <h1>Air Pollution Predictor</h1>
+
+<div id="ukMap" style="height: 600px;"></div>
+
+<script>
+  var map = L.map('ukMap').setView([54.5, -4], 6); // Latitude, Longitude, Zoom Level
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(map);
+</script>
+<h1>Air Pollution Predictor</h1>
     <form id="predictionForm">
         <label for="location">Location:</label>
         <input type="text" id="location" name="location" required>

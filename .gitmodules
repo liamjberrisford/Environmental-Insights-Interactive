@@ -1,0 +1,3 @@
+[submodule "environmental_insights"]
+	path = environmental_insights
+	url = https://github.com/berrli/Environmental-Insights.git
