@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Geospatial Map of the UK</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+</head>
+<body>
+
+<div id="ukMap" style="height: 600px;"></div>
+
+<script>
+  var map = L.map('ukMap').setView([54.5, -4], 6); // Initial view
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(map);
+
+  // Fetch the GeoJSON data from the Flask endpoint
+  fetch('/geojson-data')
+    .then(function(response) {
+      return response.json();
+    })
+    .then(function(geojsonData) {
+      console.log(geojsonData); // Log the GeoJSON data to the console
+      // Create a GeoJSON layer
+      var geojsonLayer = L.geoJSON(geojsonData, {
+        style: function (feature) {
+          return {
+            color: 'grey',     // Fill color
+            weight: 0.25         // Border thickness set to 0 to remove edges
+          };
+        }
+      }).addTo(map);
+      // Fit the map view to the bounds of the GeoJSON layer
+      map.fitBounds(geojsonLayer.getBounds());
+    })
+    .catch(function(error) {
+      console.error('Error loading the GeoJSON data:', error);
+    });
+</script>
+
+<h1>Air Pollution Predictor With NPM and Flask for the fourth time!</h1>
+<form id="predictionForm">
+    <label for="location">Location:</label>
+    <input type="text" id="location" name="location" required>
+    <label for="date">Date:</label>
+    <input type="date" id="date" name="date" required>
+    <button type="submit">Predict</button>
+</form>
+<div id="predictionResult"></div>
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+<label for="dataType">Data Type:</label>
+<select id="dataType" name="dataType" required>
+    <option value="nox">NOx</option>
+    <option value="no2">NO2</option>
+    <option value="no">NO</option>
+    <option value="o3">O3</option>
+    <option value="pm10">PM10</option>
+    <option value="pm2.5">PM2.5</option>
+    <option value="so2">SO2</option>
+</select>
+
+</body>
+</html>
