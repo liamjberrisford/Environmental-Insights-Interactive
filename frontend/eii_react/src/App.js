@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css';
 function App() {
   const [predictionResult, setPredictionResult] = useState('Geospatial Map of the UK');
   const [secondaryTitle, setSecondaryTitle] = useState('Air Pollution Predictor With NPM and Flask for the fourth time!');
+  const [selectedDataType, setSelectedDataType] = useState('nox');
   const mapRef = useRef(null);
 
   useEffect(() => {
@@ -44,7 +45,7 @@ function App() {
       });
 
     // Fetch GeoJSON data and display it on the map
-    fetch('/geojson-data')
+    fetch(`/geojson-data?dataType=${selectedDataType}`)
       .then(response => response.json())
       .then(geojsonData => {
         if (mapRef.current) {
@@ -83,7 +84,13 @@ function App() {
         <button onClick={handleLoadData}>Load Data</button>
         <div id="predictionResult"></div>
         <label htmlFor="dataType">Data Type:</label>
-        <select id="dataType" name="dataType" required>
+        <select
+          id="dataType"
+          name="dataType"
+          required
+          value={selectedDataType}
+          onChange={(e) => setSelectedDataType(e.target.value)}
+        >
           <option value="nox">NOx</option>
           <option value="no2">NO2</option>
           <option value="no">NO</option>
