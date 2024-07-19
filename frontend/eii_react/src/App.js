@@ -46,33 +46,56 @@ function App() {
 
     // Fetch GeoJSON data and display it on the map
     fetch(`/geojson-data?dataType=${selectedDataType}`)
-      .then(response => response.json())
-      .then(geojsonData => {
-        if (mapRef.current) {
-          const map = mapRef.current;
-
-          // Clear existing GeoJSON layers
-          if (map.geojsonLayer) {
-            map.removeLayer(map.geojsonLayer);
-          }
-
-          // Add new GeoJSON layer
-          map.geojsonLayer = L.geoJSON(geojsonData, {
-            style: function (feature) {
-              return {
-                color: 'grey',
-                weight: 0.25
-              };
-            }
-          }).addTo(map);
-
-          // Fit map to GeoJSON bounds
-          map.fitBounds(map.geojsonLayer.getBounds());
+    .then(response => response.json())
+    .then(geojsonData => {
+      if (mapRef.current) {
+        const map = mapRef.current;
+        
+        // Clear existing GeoJSON layers
+        if (map.geojsonLayer) {
+          map.removeLayer(map.geojsonLayer);
         }
-      })
-      .catch(error => {
-        console.error('Error fetching GeoJSON data:', error);
-      });
+
+        // Determine min and max values
+        const columnName = `${selectedDataType}Predicted mean`;
+        let values = geojsonData.features.map(feature => feature.properties[columnName]);
+        let minValue = Math.min(...values);
+        let maxValue = Math.max(...values);
+
+        // Function to determine color based on value
+        function getColor(value) {
+          // Calculate relative position of the value between min and max
+          let ratio = (value - minValue) / (maxValue - minValue);
+          // Define color scale from light yellow to dark red
+          let r = Math.floor(255 - (255 * ratio));
+          let g = Math.floor(255 * (1 - ratio));
+          let b = 0;
+          return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        // Add new GeoJSON layer with dynamic styling
+        map.geojsonLayer = L.geoJSON(geojsonData, {
+          style: function (feature) {
+            const columnName = `${selectedDataType}Predicted mean`;
+            const value = feature.properties[columnName];
+            return {
+              fillColor: getColor(value),
+              weight: 0.25,
+              opacity: 1,
+              color: 'grey',
+              fillOpacity: 0.7
+            };
+          }
+        }).addTo(map);
+
+        // Fit map to GeoJSON bounds
+        map.fitBounds(map.geojsonLayer.getBounds());
+      }
+    })
+    .catch(error => {
+      console.error('Error fetching GeoJSON data:', error);
+    });
+
   };
 
   return (
