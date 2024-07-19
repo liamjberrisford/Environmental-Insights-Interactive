@@ -1,6 +1,7 @@
-backend/data/raw_data
 .DS_Store
 __pycache__
 frontend/eii_react/node_modules/
 backend/data/.DS_Store
 backend/data/
+backend/data/database.gpkg
+modified:   backend/data/raw_data/.DS_Store

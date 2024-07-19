@@ -23,7 +23,7 @@ def serve_react_app():
     
     return "Environmental Insights backend"
 
-@app.route('/geojson-data', methods=['POST', 'GET'])
+@app.route('/air-pollution-concentrations', methods=['POST', 'GET'])
 def geojson_data():
     # Extract the parameters from the query
     data_type = request.args.get('dataType', default='nox', type=str)
@@ -71,6 +71,60 @@ def geojson_data():
     merged_data['geometry'] = merged_data['geometry'].simplify(0.001, preserve_topology=True)
 
     ei_air_pollution_functions.air_pollution_concentrations_to_UK_daily_air_quality_index(merged_data, data_type, data_type + " Prediction mean")
+
+    print(merged_data.columns)
+
+    # Convert the GeoDataFrame to GeoJSON
+    geojson_data = merged_data.to_json()
+
+    return geojson_data
+
+@app.route('/feature-vector', methods=['POST', 'GET'])
+def feature_vector_data():
+    # Extract the parameters from the query
+    data_type = request.args.get('dataType', default='Bicycle Score', type=str)
+    month = request.args.get('month', default='1', type=str)
+    day_of_week = request.args.get('day', default='Friday', type=str)
+    hour = int(request.args.get('hour', default='8', type=str).split(':')[0])
+
+    print(f"Feature Requested: {data_type}")
+    print(f"Month: {month}, Day: {day_of_week}, Hour: {hour}")
+
+    # Read the GeoPackage file for the grids layer
+    grids = gpd.read_file('data/raw_data/uk_1km_landGrids_3395_london.gpkg')
+
+    # Reproject to EPSG:4326 (WGS 84)
+    grids = grids.to_crs(epsg=4326)
+
+    # Create a connection to the database using sqlite3
+    conn = sqlite3.connect('data/database.db')
+
+    # Construct table name based on the extracted parameters
+    table_name = f"feature_vector_Month_{month}_Day_{day_of_week}_Hour_{hour}"
+
+    # Create the SQL query to select only the required columns
+    feature_column = f'"{data_type}"'
+    sql_query = f'SELECT "Grid ID", {feature_column} FROM {table_name}'
+
+    # Read the required columns using pandas
+    try:
+        feature_vector_data = pd.read_sql_query(sql_query, conn)
+    except Exception as e:
+        print(f"Error reading table {table_name}: {e}")
+        conn.close()
+        return jsonify({"error": f"Could not find table {table_name} in the database."}), 400
+
+    # Close the connection
+    conn.close()
+
+    # Merge or join the grids with the selected columns of feature_vector_data
+    # Assuming a common column 'Grid ID' exists in both GeoDataFrames
+    merged_data = grids.merge(feature_vector_data, left_on='Grid ID', right_on='Grid ID')
+
+    # Reproject to EPSG:4326 (WGS 84)
+    merged_data = merged_data.to_crs(epsg=4326)
+
+    merged_data['geometry'] = merged_data['geometry'].simplify(0.001, preserve_topology=True)
 
     print(merged_data.columns)
 
