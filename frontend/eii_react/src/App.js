@@ -33,8 +33,7 @@ const featureVectorColumnNames = [
   'Car and Taxi Score',
   'Bus and Coach Score',
   'LGV Score',
-  'HGV Score',
-  'Urban'
+  'HGV Score'
 ];
 
 function App() {
@@ -46,26 +45,26 @@ function App() {
   const [selectedHour, setSelectedHour] = useState('00:00');
   const [clickedValue, setClickedValue] = useState(null);
   const [chartData, setChartData] = useState(null);
-  const mapFeatureVectorRef = useRef(null);
-  const mapAirPollutionRef = useRef(null);
+  const featureVectorMapRef = useRef(null);
+  const airPollutionMapRef = useRef(null);
 
   useEffect(() => {
-    if (!mapFeatureVectorRef.current) {
-      const map = L.map('mapFeatureVector').setView([54.5, -4], 6); // Initial view
-      mapFeatureVectorRef.current = map; // Store the map instance in the ref
+    if (!featureVectorMapRef.current) {
+      const featureVectorMap = L.map('featureVectorMap').setView([54.5, -4], 6);
+      featureVectorMapRef.current = featureVectorMap;
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      }).addTo(map);
+      }).addTo(featureVectorMap);
     }
 
-    if (!mapAirPollutionRef.current) {
-      const map = L.map('mapAirPollution').setView([54.5, -4], 6); // Initial view
-      mapAirPollutionRef.current = map; // Store the map instance in the ref
+    if (!airPollutionMapRef.current) {
+      const airPollutionMap = L.map('airPollutionMap').setView([54.5, -4], 6);
+      airPollutionMapRef.current = airPollutionMap;
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      }).addTo(map);
+      }).addTo(airPollutionMap);
     }
   }, []);
 
@@ -92,8 +91,8 @@ function App() {
     fetch(`/feature-vector?dataType=${selectedFeatureVector}&month=${monthNumber}&day=${selectedDay}&hour=${selectedHour}`)
       .then(response => response.json())
       .then(geojsonData => {
-        if (mapFeatureVectorRef.current) {
-          const map = mapFeatureVectorRef.current;
+        if (featureVectorMapRef.current) {
+          const map = featureVectorMapRef.current;
 
           // Clear existing GeoJSON layers
           if (map.geojsonLayer) {
@@ -153,8 +152,8 @@ function App() {
     fetch(`/air-pollution-concentrations?dataType=${selectedAirPollution}&month=${monthNumber}&day=${selectedDay}&hour=${selectedHour}`)
       .then(response => response.json())
       .then(geojsonData => {
-        if (mapAirPollutionRef.current) {
-          const map = mapAirPollutionRef.current;
+        if (airPollutionMapRef.current) {
+          const map = airPollutionMapRef.current;
 
           // Clear existing GeoJSON layers
           if (map.geojsonLayer) {
@@ -236,47 +235,45 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1 className="center-title">Environmental Insights</h1>
-        <div className="main-container">
-          <div className="map-section">
-            <div id="mapFeatureVector" className="map-container"></div>
-            <div className="control-panel">
-              <h3>Model Input</h3>
+        <h1 className="center-title">Environmental Insights Interactive</h1>
+        <div className="maps-container">
+          <div className="map-container">
+            <div id="featureVectorMap" className="map"></div>
+            <div className="controls">
+              <h2>Model Input</h2>
               <label htmlFor="featureVector">Feature Vector:</label>
               <select
                 id="featureVector"
                 name="featureVector"
                 value={selectedFeatureVector}
                 onChange={(e) => setSelectedFeatureVector(e.target.value)}
-                style={{ margin: '0 10px' }}
               >
                 {featureVectorColumnNames.map(column => (
                   <option key={column} value={column}>{column}</option>
                 ))}
               </select>
-              <button onClick={handleLoadFeatureVectorData}>Load</button>
+              <button onClick={handleLoadFeatureVectorData}>Load Feature Vector Data</button>
             </div>
           </div>
-          <div className="map-section">
-            <div id="mapAirPollution" className="map-container"></div>
-            <div className="control-panel">
-              <h3>Model Output</h3>
+          <div className="map-container">
+            <div id="airPollutionMap" className="map"></div>
+            <div className="controls">
+              <h2>Model Output</h2>
               <label htmlFor="airPollution">Air Pollution:</label>
               <select
                 id="airPollution"
                 name="airPollution"
                 value={selectedAirPollution}
                 onChange={(e) => setSelectedAirPollution(e.target.value)}
-                style={{ margin: '0 10px' }}
               >
                 {airPollutionColumnNames.map(column => (
                   <option key={column} value={column}>{column}</option>
                 ))}
               </select>
-              <button onClick={handleLoadAirPollutionData}>Load</button>
+              <button onClick={handleLoadAirPollutionData}>Load Air Pollution Data</button>
             </div>
           </div>
-          <div className="chart-section">
+          <div className="chart-container">
             {chartData && (
               <Bar
                 data={chartData}
@@ -306,14 +303,13 @@ function App() {
                 }}
               />
             )}
-            <div className="date-time-controls">
+            <div className="controls">
               <label htmlFor="month">Month:</label>
               <select
                 id="month"
                 name="month"
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
-                style={{ margin: '0 10px' }}
               >
                 {Object.keys(monthNames).map(month => (
                   <option key={month} value={month}>{month}</option>
@@ -325,7 +321,6 @@ function App() {
                 name="day"
                 value={selectedDay}
                 onChange={(e) => setSelectedDay(e.target.value)}
-                style={{ margin: '0 10px' }}
               >
                 {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
                   <option key={day} value={day}>{day}</option>
@@ -337,7 +332,6 @@ function App() {
                 name="hour"
                 value={selectedHour}
                 onChange={(e) => setSelectedHour(e.target.value)}
-                style={{ margin: '0 10px' }}
               >
                 {Array.from({ length: 24 }, (_, i) => i).map(hour => (
                   <option key={hour} value={`${hour.toString().padStart(2, '0')}:00`}>{`${hour.toString().padStart(2, '0')}:00`}</option>
