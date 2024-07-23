@@ -5,3 +5,4 @@ backend/data/.DS_Store
 backend/data/
 backend/data/database.gpkg
 modified:   backend/data/raw_data/.DS_Store
+node_modules
