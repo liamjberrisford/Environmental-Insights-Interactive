@@ -77,6 +77,11 @@ function App() {
   const [chartData, setChartData] = useState(null);
   const [sliderValue, setSliderValue] = useState(0);
   const [changes, setChanges] = useState({});
+  const [showOriginalMap, setShowOriginalMap] = useState(true);
+  const [originalGeojson, setOriginalGeojson] = useState(null);
+  const [updatedGeojson, setUpdatedGeojson] = useState(null);
+  const [minValue, setMinValue] = useState(null);
+  const [maxValue, setMaxValue] = useState(null);
   const featureVectorMapRef = useRef(null);
   const airPollutionMapRef = useRef(null);
 
@@ -198,6 +203,10 @@ function App() {
 
           map.fitBounds(map.geojsonLayer.getBounds());
 
+          setOriginalGeojson(geojsonData);
+          setMinValue(minValue);
+          setMaxValue(maxValue);
+
           const histogramColumnName = `${selectedAirPollution} AQI`;
           console.log(histogramColumnName);
           let columnValues = geojsonData.features.map(feature => feature.properties[histogramColumnName]);
@@ -215,10 +224,10 @@ function App() {
             labels,
             datasets: [
               {
-                label: `${histogramColumnName} count`,
+                label: `Original ${histogramColumnName} count`,
                 data: bins,
-                backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                borderColor: 'rgba(75, 192, 192, 1)',
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                borderColor: 'rgba(255, 99, 132, 1)',
                 borderWidth: 1
               }
             ]
@@ -242,7 +251,7 @@ function App() {
 
     const url = new URL('/predict', window.location.origin);
     url.searchParams.append('changes', changesStr);
-    url.searchParams.append('dataType', selectedFeatureVector);
+    url.searchParams.append('air_pollutant', selectedAirPollution);
     url.searchParams.append('month', selectedMonth);
     url.searchParams.append('day', selectedDay);
     url.searchParams.append('hour', selectedHour);
@@ -256,6 +265,8 @@ function App() {
           throw new Error("Invalid JSON data");
         }
         const updatedGeojson = JSON.parse(data.updated_geojson);
+        setUpdatedGeojson(updatedGeojson);
+
         if (airPollutionMapRef.current) {
           const map = airPollutionMapRef.current;
 
@@ -295,11 +306,79 @@ function App() {
           }).addTo(map);
 
           map.fitBounds(map.geojsonLayer.getBounds());
+
+          const histogramColumnName = `${selectedAirPollution} AQI`;
+          let columnValues = updatedGeojson.features.map(feature => feature.properties[histogramColumnName]);
+          const bins = new Array(10).fill(0);
+
+          columnValues.forEach(value => {
+            if (value >= 1 && value <= 10) {
+              bins[value - 1]++;
+            }
+          });
+
+          const updatedLabels = bins.map((_, index) => (index + 1).toString());
+          const updatedDataset = {
+            label: `Updated ${histogramColumnName} count`,
+            data: bins,
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+          };
+
+          setChartData((prevChartData) => ({
+            labels: updatedLabels,
+            datasets: [...prevChartData.datasets, updatedDataset]
+          }));
         }
       })
       .catch(error => {
         console.error('Error making prediction:', error);
       });
+  };
+
+  const handleToggleMap = () => {
+    setShowOriginalMap(!showOriginalMap);
+
+    if (airPollutionMapRef.current && originalGeojson) {
+      const map = airPollutionMapRef.current;
+
+      if (map.geojsonLayer) {
+        map.removeLayer(map.geojsonLayer);
+      }
+
+      const geojsonData = showOriginalMap ? originalGeojson : updatedGeojson;
+      const concentrationColumnName = `${selectedAirPollution} Prediction mean`;
+
+      function getColor(value) {
+        let ratio = (value - minValue) / (maxValue - minValue);
+        let r = showOriginalMap ? 255 : Math.floor(255 * (1 - ratio));
+        let g = showOriginalMap ? Math.floor(255 * (1 - ratio)) : Math.floor(255 * (1 - ratio));
+        let b = showOriginalMap ? Math.floor(255 * (1 - ratio)) : 255;
+        return `rgb(${r}, ${g}, ${b})`;
+      }
+
+      map.geojsonLayer = L.geoJSON(geojsonData, {
+        style: function (feature) {
+          const value = feature.properties[concentrationColumnName];
+          return {
+            fillColor: getColor(value),
+            weight: 0.25,
+            opacity: 1,
+            color: 'grey',
+            fillOpacity: 0.7
+          };
+        },
+        onEachFeature: function (feature, layer) {
+          layer.on('click', function () {
+            const value = feature.properties[concentrationColumnName];
+            setClickedValue(value);
+          });
+        }
+      }).addTo(map);
+
+      map.fitBounds(map.geojsonLayer.getBounds());
+    }
   };
 
   return (
@@ -396,6 +475,15 @@ function App() {
               </select>
               <button onClick={handleLoadAirPollutionData}>Load Air Pollution Data</button>
               <button onClick={handleMakePrediction}>Make Prediction</button>
+              <div>
+                <input
+                  type="checkbox"
+                  id="toggleMap"
+                  checked={!showOriginalMap}
+                  onChange={handleToggleMap}
+                />
+                <label htmlFor="toggleMap">Show Updated Map</label>
+              </div>
             </div>
           </div>
           <div className="chart-container">

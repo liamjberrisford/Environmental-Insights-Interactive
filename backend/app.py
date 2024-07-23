@@ -291,7 +291,7 @@ def feature_vector_data():
 @app.route('/predict', methods=['GET'])
 def predict():
     # Extract parameters from the query string
-    data_type = request.args.get('dataType', default='Bicycle Score', type=str)
+    air_pollutant = request.args.get('air_pollutant', default='no2', type=str)
     month = request.args.get('month', default='1', type=str)
     day_of_week = request.args.get('day', default='Friday', type=str)
     hour = int(request.args.get('hour', default='8', type=str).split(':')[0])
@@ -322,8 +322,10 @@ def predict():
             observation_data[feature] = observation_data[feature] * (1 + change / 100)
 
      # Load the model
-    model_type, model_dataset, air_pollutant = "0.5", "All", "no2"
+    model_type, model_dataset = "0.5", "All"
+    
     model_filepath = "models/uk/dataset_"+model_dataset+"_quantile_regression_"+model_type+"_air_pollutant_"+air_pollutant+".pkl"
+    print(model_filepath)
     with open(model_filepath, "rb") as f:  # Python 3: open(..., 'rb')
         climate_projection_model = pickle.load(f)
 
@@ -337,7 +339,7 @@ def predict():
 
     # Rename columns back for merging
     updated_predictions = updated_predictions.rename(columns={"UK Model Grid ID": "Grid ID"})
-    updated_predictions = updated_predictions.rename(columns={"Model Predicition": "no2 Prediction mean"})
+    updated_predictions = updated_predictions.rename(columns={"Model Predicition": air_pollutant + " Prediction mean"})
 
     # Merge with the grids data
     merged_data = grids.merge(updated_predictions, left_on='Grid ID', right_on='Grid ID')
@@ -345,6 +347,9 @@ def predict():
     # Simplify geometries for performance
     merged_data['geometry'] = merged_data['geometry'].simplify(0.001, preserve_topology=True)
 
+    ei_air_pollution_functions.air_pollution_concentrations_to_UK_daily_air_quality_index(merged_data, air_pollutant, air_pollutant + " Prediction mean")
+
+    print(merged_data)
     # Convert the GeoDataFrame to GeoJSON
     updated_geojson = merged_data.to_json()
     return jsonify({"updated_geojson": updated_geojson})
