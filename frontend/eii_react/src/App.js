@@ -132,7 +132,7 @@ function App() {
       .then(geojsonData => {
         console.log('Air Pollution GeoJSON:', geojsonData); // Log GeoJSON data
 
-        const concentrationColumnName = `${selectedAirPollution} Prediction mean`;
+        const concentrationColumnName = `${selectedAirPollution} Prediction 0.5`;
         let concentrationValues = geojsonData.features.map(feature => feature.properties[concentrationColumnName]);
         const minValue = Math.min(...concentrationValues);
         const maxValue = Math.max(...concentrationValues);
@@ -216,7 +216,7 @@ function App() {
         const updatedGeojson = JSON.parse(data.updated_geojson);
         console.log('Updated GeoJSON:', updatedGeojson); // Log GeoJSON data
 
-        const concentrationColumnName = `${selectedAirPollution} Prediction mean`;
+        const concentrationColumnName = `${selectedAirPollution} Prediction 0.5`;
         let concentrationValues = updatedGeojson.features.map(feature => feature.properties[concentrationColumnName]);
         const minValue = Math.min(...concentrationValues);
         const maxValue = Math.max(...concentrationValues);

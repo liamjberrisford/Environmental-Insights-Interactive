@@ -202,7 +202,7 @@ def geojson_data():
     table_name = f"air_pollution_concentration_Month_{month}_Day_{day_of_week}_Hour_{hour}"
 
     # Create the SQL query to select only the required columns
-    pollutant_column = f'"{data_type} Prediction mean"'
+    pollutant_column = f'"{data_type} Prediction 0.5"'
     sql_query = f'SELECT "Grid ID", {pollutant_column} FROM {table_name}'
 
     # Read the required columns using pandas
@@ -225,9 +225,9 @@ def geojson_data():
 
     merged_data['geometry'] = merged_data['geometry'].simplify(0.001, preserve_topology=True)
 
-    ei_air_pollution_functions.air_pollution_concentrations_to_UK_daily_air_quality_index(merged_data, data_type, data_type + " Prediction mean")
+    ei_air_pollution_functions.air_pollution_concentrations_to_UK_daily_air_quality_index(merged_data, data_type, data_type + " Prediction 0.5")
 
-    print(merged_data.columns)
+    print(merged_data[data_type + " Prediction 0.5"].describe())
 
     # Convert the GeoDataFrame to GeoJSON
     geojson_data = merged_data.to_json()
@@ -242,7 +242,7 @@ def feature_vector_data():
     day_of_week = request.args.get('day', default='Friday', type=str)
     hour = int(request.args.get('hour', default='8', type=str).split(':')[0])
 
-    print(f"Feature Requested: {data_type}")
+    print(f"Feature Vector Requested: {data_type}")
     print(f"Month: {month}, Day: {day_of_week}, Hour: {hour}")
 
     # Read the GeoPackage file for the grids layer
@@ -298,6 +298,10 @@ def predict():
     changes_str = request.args.get('changes', default='', type=str)
     changes = {item.split(':')[0]: float(item.split(':')[1]) for item in changes_str.split(',') if ':' in item}
 
+    print(f"Modified Predicted Air Pollutant Requested: {air_pollutant}")
+    print(f"Month: {month}, Day: {day_of_week}, Hour: {hour}")
+    print(f"Feature Vector Changes: {changes}")
+
     # Read the GeoPackage file for the grids layer
     grids = gpd.read_file('data/raw_data/uk_1km_landGrids_3395_london.gpkg')
     grids = grids.to_crs(epsg=4326)
@@ -339,7 +343,7 @@ def predict():
 
     # Rename columns back for merging
     updated_predictions = updated_predictions.rename(columns={"UK Model Grid ID": "Grid ID"})
-    updated_predictions = updated_predictions.rename(columns={"Model Predicition": air_pollutant + " Prediction mean"})
+    updated_predictions = updated_predictions.rename(columns={"Model Predicition": air_pollutant + " Prediction 0.5"})
 
     # Merge with the grids data
     merged_data = grids.merge(updated_predictions, left_on='Grid ID', right_on='Grid ID')
@@ -347,9 +351,9 @@ def predict():
     # Simplify geometries for performance
     merged_data['geometry'] = merged_data['geometry'].simplify(0.001, preserve_topology=True)
 
-    ei_air_pollution_functions.air_pollution_concentrations_to_UK_daily_air_quality_index(merged_data, air_pollutant, air_pollutant + " Prediction mean")
+    ei_air_pollution_functions.air_pollution_concentrations_to_UK_daily_air_quality_index(merged_data, air_pollutant, air_pollutant + " Prediction 0.5")
 
-    print(merged_data)
+    print(merged_data[air_pollutant + " Prediction 0.5"].describe())
     # Convert the GeoDataFrame to GeoJSON
     updated_geojson = merged_data.to_json()
     return jsonify({"updated_geojson": updated_geojson})
