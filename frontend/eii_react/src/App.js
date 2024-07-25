@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import './App.css';
 import DeckGL from '@deck.gl/react';
 import { GeoJsonLayer } from '@deck.gl/layers';
@@ -38,6 +38,11 @@ const featureVectorColumnNames = [
   '10m_v_component_of_wind', '2m_dewpoint_temperature', '2m_temperature',
   'boundary_layer_height', 'downward_uv_radiation_at_the_surface', 'instantaneous_10m_wind_gust',
   'surface_pressure', 'total_column_rain_water'
+];
+
+const monthNames = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
 const INITIAL_VIEW_STATE = {
@@ -174,7 +179,7 @@ function App() {
           labels,
           datasets: [
             {
-              label: `Original ${histogramColumnName} count`,
+              label: `Baseline ${histogramColumnName} Count`,
               data: bins,
               backgroundColor: 'rgba(255, 99, 132, 0.2)',
               borderColor: 'rgba(255, 99, 132, 1)',
@@ -253,7 +258,7 @@ function App() {
 
         const updatedLabels = bins.map((_, index) => (index + 1).toString());
         const updatedDataset = {
-          label: `Updated ${histogramColumnName} count`,
+          label: `Modified Predicted ${histogramColumnName} Count`,
           data: bins,
           backgroundColor: 'rgba(54, 162, 235, 0.2)',
           borderColor: 'rgba(54, 162, 235, 1)',
@@ -273,9 +278,13 @@ function App() {
       });
   };
 
-  const debouncedSetViewState = useCallback(debounce((newViewState) => {
+  const debouncedSetViewState = debounce((newViewState) => {
     setViewState(newViewState);
-  }, 200), []); // Adjust the debounce delay as needed
+  }, 200);
+
+  const handleViewStateChange = useCallback(({ viewState }) => {
+    debouncedSetViewState(viewState);
+  }, [debouncedSetViewState]);
 
   return (
     <div className="App">
@@ -292,8 +301,8 @@ function App() {
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
               >
-                {Array.from({ length: 12 }, (_, i) => (i + 1)).map(month => (
-                  <option key={month} value={month}>{month}</option>
+                {monthNames.map((name, index) => (
+                  <option key={name} value={index + 1}>{name}</option>
                 ))}
               </select>
             </div>
@@ -333,7 +342,7 @@ function App() {
                 controller={true}
                 layers={leftGeojson ? leftGeojson : []}
                 style={{ height: '500px' }}
-                onViewStateChange={({ viewState }) => debouncedSetViewState(viewState)}
+                onViewStateChange={handleViewStateChange}
               >
                 <Map mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json" />
               </DeckGL>
@@ -346,7 +355,7 @@ function App() {
                 controller={true}
                 layers={mapState === 'prediction' ? updatedGeojson : rightGeojson} // Conditionally render the correct layer
                 style={{ height: '500px' }}
-                onViewStateChange={({ viewState }) => debouncedSetViewState(viewState)}
+                onViewStateChange={handleViewStateChange}
               >
                 <Map mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json" />
               </DeckGL>
