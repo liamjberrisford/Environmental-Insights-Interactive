@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './App.css';
 import DeckGL from '@deck.gl/react';
 import { GeoJsonLayer } from '@deck.gl/layers';
@@ -6,6 +6,7 @@ import { Map } from 'react-map-gl';
 import { Bar } from 'react-chartjs-2';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import bbox from '@turf/bbox';
+import { debounce } from 'lodash';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -60,6 +61,7 @@ function App() {
   const [rightGeojson, setRightGeojson] = useState(null);
   const [updatedGeojson, setUpdatedGeojson] = useState(null);
   const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
+  const [mapState, setMapState] = useState('original'); // New state to track map state
 
   const updateViewState = (geojson) => {
     const bounds = bbox(geojson);
@@ -79,6 +81,16 @@ function App() {
     return [r, g, b, 180];
   };
 
+  const getLineWidth = (zoom) => {
+    if (zoom < 10) {
+      return 0; // Hide lines at lower zoom levels
+    } else if (zoom < 12) {
+      return 0.5; // Thin lines at mid zoom levels
+    } else {
+      return 1; // Thicker lines at higher zoom levels
+    }
+  };
+
   const handleLoadFeatureVectorData = () => {
     fetch(`/feature-vector?dataType=${selectedFeatureVector}&month=${selectedMonth}&day=${selectedDay}&hour=${selectedHour}`)
       .then(response => response.json())
@@ -95,11 +107,15 @@ function App() {
           data: geojsonData,
           stroked: true,
           filled: true,
-          lineWidthMinPixels: 0.01,
+          getLineWidth: () => getLineWidth(viewState.zoom), // Use dynamic line width
           opacity: 0.4,
-          getLineColor: [255, 100, 100],
+          getLineColor: [0, 0, 0],
           getFillColor: f => getColor(f.properties[concentrationColumnName], minValue, maxValue, 'red'),
           pickable: true,
+          updateTriggers: {
+            getFillColor: [minValue, maxValue, concentrationColumnName],
+            getLineWidth: viewState.zoom // Trigger updates when zoom changes
+          }
         });
 
         setLeftGeojson([leftLayer]);
@@ -126,14 +142,20 @@ function App() {
           data: geojsonData,
           stroked: true,
           filled: true,
-          lineWidthMinPixels: 0.01,
+          getLineWidth: () => getLineWidth(viewState.zoom), // Use dynamic line width
           opacity: 0.4,
-          getLineColor: [255, 100, 100],
+          getLineColor: [0, 0, 0],
           getFillColor: f => getColor(f.properties[concentrationColumnName], minValue, maxValue, 'red'),
-          pickable: true
+          pickable: true,
+          updateTriggers: {
+            getFillColor: [minValue, maxValue, concentrationColumnName],
+            getLineWidth: viewState.zoom // Trigger updates when zoom changes
+          }
         });
 
         setRightGeojson([redLayer]);
+        setUpdatedGeojson(null); // Clear the blue layer when loading the red layer
+        setMapState('original'); // Update map state to original
         updateViewState(geojsonData);
 
         const histogramColumnName = `${selectedAirPollution} AQI`;
@@ -204,14 +226,19 @@ function App() {
           data: updatedGeojson,
           stroked: true,
           filled: true,
-          lineWidthMinPixels: 0.01,
+          getLineWidth: () => getLineWidth(viewState.zoom), // Use dynamic line width
           opacity: 0.4,
           getLineColor: [100, 100, 255],
           getFillColor: f => getColor(f.properties[concentrationColumnName], minValue, maxValue, 'blue'),
           pickable: true,
+          updateTriggers: {
+            getFillColor: [minValue, maxValue, concentrationColumnName],
+            getLineWidth: viewState.zoom // Trigger updates when zoom changes
+          }
         });
 
         setUpdatedGeojson([blueLayer]);
+        setMapState('prediction'); // Update map state to prediction
         updateViewState(updatedGeojson);
 
         const histogramColumnName = `${selectedAirPollution} AQI`;
@@ -246,12 +273,16 @@ function App() {
       });
   };
 
+  const debouncedSetViewState = useCallback(debounce((newViewState) => {
+    setViewState(newViewState);
+  }, 200), []); // Adjust the debounce delay as needed
+
   return (
     <div className="App">
       <header className="App-header">
         <h1 className="center-title">Environmental Insights Interactive</h1>
         <div className="filters-container">
-          <h2 className="filters-title">Typical Day Parameter Time</h2>
+          <h2 className="filters-title">Typical Day Selection</h2>
           <div className="filters-box">
             <div className="filter">
               <label htmlFor="month">Month:</label>
@@ -302,6 +333,7 @@ function App() {
                 controller={true}
                 layers={leftGeojson ? leftGeojson : []}
                 style={{ height: '500px' }}
+                onViewStateChange={({ viewState }) => debouncedSetViewState(viewState)}
               >
                 <Map mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json" />
               </DeckGL>
@@ -312,8 +344,9 @@ function App() {
               <DeckGL
                 initialViewState={viewState}
                 controller={true}
-                layers={updatedGeojson ? updatedGeojson : rightGeojson}
+                layers={mapState === 'prediction' ? updatedGeojson : rightGeojson} // Conditionally render the correct layer
                 style={{ height: '500px' }}
+                onViewStateChange={({ viewState }) => debouncedSetViewState(viewState)}
               >
                 <Map mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json" />
               </DeckGL>
