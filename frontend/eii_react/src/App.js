@@ -85,8 +85,11 @@ function App() {
   const [updatedGeojson, setUpdatedGeojson] = useState(null);
   const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
   const [mapState, setMapState] = useState('original');
-  const [backendUrl, setBackendUrl] = useState('http://127.0.0.1:3000');
   const [backendStatus, setBackendStatus] = useState(false);
+
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  const defaultBackendUrl = isDevelopment ? 'http://127.0.0.1:3000' : 'https://liberrisford.pythonanywhere.com';
+  const [backendUrl, setBackendUrl] = useState(defaultBackendUrl);
 
   // Function to check the backend status
   const checkBackendStatus = useCallback(() => {
