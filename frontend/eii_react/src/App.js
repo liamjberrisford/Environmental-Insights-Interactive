@@ -368,19 +368,6 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <div className="backend-input-container">
-          <label htmlFor="backendUrl">Backend URL: </label>
-          <input
-            id="backendUrl"
-            type="text"
-            value={backendUrl}
-            onChange={(e) => setBackendUrl(e.target.value)}
-            style={{ backgroundColor: backendStatus ? 'green' : 'red' }}
-          />
-          <span className="backend-status-text">
-            {backendStatus ? 'Connected' : 'Disconnected'}
-          </span>
-        </div>
         <div className="title-container">
           <h1 className="center-title">Environmental Insights Interactive</h1>
         </div>
@@ -549,6 +536,21 @@ function App() {
           />
         )}
       </div>
+      <footer className="App-footer">
+        <div className="backend-input-container">
+          <label htmlFor="backendUrl">Backend URL: </label>
+          <input
+            id="backendUrl"
+            type="text"
+            value={backendUrl}
+            onChange={(e) => setBackendUrl(e.target.value)}
+            style={{ backgroundColor: backendStatus ? 'green' : 'red' }}
+          />
+          <span className="backend-status-text">
+            {backendStatus ? 'Connected' : 'Disconnected'}
+          </span>
+        </div>
+      </footer>
     </div>
   );
 }

@@ -1,16 +1,28 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
 
+html, body, #root, .App {
+  height: 100%;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 body {
   font-family: 'Roboto', sans-serif;
 }
 
 .App {
   text-align: center;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .App-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   padding: 20px;
-  border-radius: 8px;
 }
 
 .filters-container {
@@ -19,6 +31,7 @@ body {
   border-radius: 8px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   margin-bottom: 20px;
+  width: 100%;
 }
 
 .filters-box {
@@ -31,7 +44,7 @@ body {
 .filter {
   flex: 1;
   margin: 0 10px;
-  text-align: left; /* Align text to the left */
+  text-align: left;
 }
 
 .filter label {
@@ -50,16 +63,17 @@ body {
 
 .maps-wrapper {
   display: flex;
-  justify-content: space-around;
-  flex-wrap: wrap;
+  justify-content: center;
   width: 100%;
   margin-bottom: 20px;
+  flex-grow: 1;
+  align-items: center;
 }
 
 .map-section {
   flex: 1;
+  max-width: 45%;
   margin: 10px;
-  min-width: 45%;
 }
 
 .map-container {
@@ -70,15 +84,15 @@ body {
 
 .controls-wrapper {
   display: flex;
-  justify-content: space-around;
-  flex-wrap: wrap;
+  justify-content: center;
   width: 100%;
+  flex-wrap: wrap;
 }
 
 .controls-section {
   flex: 1;
+  max-width: 45%;
   margin: 10px;
-  min-width: 45%;
 }
 
 .controls {
@@ -87,7 +101,7 @@ body {
   border-radius: 8px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   margin-top: 10px;
-  width: 100%;
+  width: calc(100% - 20px); /* Adjusts the width to match the map */
   text-align: left;
 }
 
@@ -121,11 +135,6 @@ body {
   background-color: #0056b3;
 }
 
-select {
-  text-align: center;
-  text-align-last: center;
-}
-
 .slider-container {
   width: 100%;
   display: flex;
@@ -156,27 +165,23 @@ select {
   margin-bottom: 5px;
 }
 
-.App-header {
+.App-footer {
+  width: 100%;
+  text-align: center;
   display: flex;
-  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  padding: 20px;
+  padding: 10px 0;
+  background-color: #f8f8f8;
+  position: relative;
 }
 
 .backend-input-container {
-  display: flex;
-  align-items: center;
-  margin-bottom: 20px;
+  display: inline-block;
+  text-align: center;
 }
 
 .backend-status-text {
   margin-left: 10px;
   font-weight: bold;
-  color: white;
 }
-
-.center-title {
-  text-align: center;
-  margin: 0;
-}
-
