@@ -24,9 +24,158 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 GPKG_FILE = os.path.join(BASE_DIR, 'data', 'raw_data', 'uk_1km_landGrids_3395_london.gpkg')
 DATABASE_FILE = os.path.join(BASE_DIR, 'data', 'database.db')
 
-featureVectorColumnNames = [
-    # Add the feature vector column names here...
-]
+featureVectorColumnNames = ["Bicycle Score", "Car and Taxi Score", "Bus and Coach Score", "LGV Score", "HGV Score",
+                            
+                            "Week Number", "Month Number", "Day of Week Number", "Hour Number", 
+                            
+                            '100m_u_component_of_wind', 
+                            '100m_v_component_of_wind', 
+                            '10m_u_component_of_wind',
+                            '10m_v_component_of_wind', 
+                            '2m_dewpoint_temperature', 
+                            '2m_temperature',
+                            'boundary_layer_height', 
+                            'downward_uv_radiation_at_the_surface', 
+                            'instantaneous_10m_wind_gust',
+                            'surface_pressure', 
+                            'total_column_rain_water',
+                            
+                            "S5P_NO2","S5P_AAI","S5P_CO","S5P_HCHO","S5P_O3",
+                                
+                            "Road Infrastructure Distance residential",
+                            "Road Infrastructure Distance footway",
+                            "Road Infrastructure Distance service",
+                            "Road Infrastructure Distance primary",
+                            "Road Infrastructure Distance path",
+                            "Road Infrastructure Distance cycleway",
+                            "Road Infrastructure Distance tertiary",
+                            "Road Infrastructure Distance secondary",
+                            "Road Infrastructure Distance unclassified",
+                            "Road Infrastructure Distance trunk",
+                            "Road Infrastructure Distance track",
+                            "Road Infrastructure Distance motorway",
+                            "Road Infrastructure Distance pedestrian",
+                            "Road Infrastructure Distance living_street",
+                            
+                            
+                            "Total Length cycleway", "Total Length footway",
+                            "Total Length living_street", "Total Length motorway",
+                             "Total Length path",
+                            "Total Length pedestrian", "Total Length primary",
+                            "Total Length residential", "Total Length secondary",
+                             "Total Length service",
+                            "Total Length tertiary",
+                             "Total Length track",
+                            "Total Length trunk",
+                            "Total Length unclassified",
+                            
+                            
+                            'No Land',
+                            'Broadleaved woodland',
+                            'Coniferous Woodland',
+                            'Arable and Horticulture',
+                            'Improved Grassland',
+                            'Neutral Grassland',
+                            'Calcareous Grassland',
+                            'Acid grassland',
+                            'Fen Marsh and Swamp',
+                            'Heather',
+                            'Heather grassland',
+                            'Bog',
+                            'Inland Rock',
+                            'Saltwater',
+                            'Freshwater',
+                            'Supra-littoral Rock',
+                            'Supra-littoral Sediment',
+                            'Littoral Rock',
+                            'Littoral sediment',
+                            'Saltmarsh',
+                            'Urban',
+                            'Suburban',
+                           
+                            'NAEI SNAP 1 NOx',
+                            'NAEI SNAP 2 NOx',
+                            'NAEI SNAP 3 NOx',
+                            'NAEI SNAP 4 NOx',
+                            'NAEI SNAP 5 NOx',
+                            'NAEI SNAP 6 NOx',
+                            'NAEI SNAP 7 NOx',
+                            'NAEI SNAP 8 NOx',
+                            'NAEI SNAP 9 NOx',
+                            'NAEI SNAP 10 NOx',
+                            'NAEI SNAP 11 NOx',
+                            'NAEI SNAP 1 CO',
+                            'NAEI SNAP 2 CO',
+                            'NAEI SNAP 3 CO',
+                            'NAEI SNAP 4 CO',
+                            'NAEI SNAP 5 CO',
+                            'NAEI SNAP 6 CO',
+                            'NAEI SNAP 7 CO',
+                            'NAEI SNAP 8 CO',
+                            'NAEI SNAP 9 CO',
+                            'NAEI SNAP 10 CO',
+                            'NAEI SNAP 11 CO',
+                            'NAEI SNAP 1 SOx',
+                            'NAEI SNAP 2 SOx',
+                            'NAEI SNAP 3 SOx',
+                            'NAEI SNAP 4 SOx',
+                            'NAEI SNAP 5 SOx',
+                            'NAEI SNAP 6 SOx',
+                            'NAEI SNAP 7 SOx',
+                            'NAEI SNAP 8 SOx',
+                            'NAEI SNAP 9 SOx',
+                            'NAEI SNAP 10 SOx',
+                            'NAEI SNAP 11 SOx',
+                            'NAEI SNAP 1 NH3',
+                            'NAEI SNAP 2 NH3',
+                            'NAEI SNAP 3 NH3',
+                            'NAEI SNAP 4 NH3',
+                            'NAEI SNAP 5 NH3',
+                            'NAEI SNAP 6 NH3',
+                            'NAEI SNAP 7 NH3',
+                            'NAEI SNAP 8 NH3',
+                            'NAEI SNAP 9 NH3',
+                            'NAEI SNAP 10 NH3',
+                            'NAEI SNAP 11 NH3',
+                            'NAEI SNAP 1 NMVOC',
+                            'NAEI SNAP 2 NMVOC',
+                            'NAEI SNAP 3 NMVOC',
+                            'NAEI SNAP 4 NMVOC',
+                            'NAEI SNAP 5 NMVOC',
+                            'NAEI SNAP 6 NMVOC',
+                            'NAEI SNAP 7 NMVOC',
+                            'NAEI SNAP 8 NMVOC',
+                            'NAEI SNAP 9 NMVOC',
+                            'NAEI SNAP 10 NMVOC',
+                            'NAEI SNAP 11 NMVOC',
+                            'NAEI SNAP 1 PM10',
+                            'NAEI SNAP 2 PM10',
+                            'NAEI SNAP 3 PM10',
+                            'NAEI SNAP 4 PM10',
+                            'NAEI SNAP 5 PM10',
+                            'NAEI SNAP 6 PM10',
+                            'NAEI SNAP 7 PM10',
+                            'NAEI SNAP 8 PM10',
+                            'NAEI SNAP 9 PM10',
+                            'NAEI SNAP 10 PM10',
+                            'NAEI SNAP 11 PM10',
+                            'NAEI SNAP 1 PM25',
+                            'NAEI SNAP 2 PM25',
+                            'NAEI SNAP 3 PM25',
+                            'NAEI SNAP 4 PM25',
+                            'NAEI SNAP 5 PM25',
+                            'NAEI SNAP 6 PM25',
+                            'NAEI SNAP 7 PM25',
+                            'NAEI SNAP 8 PM25',
+                            'NAEI SNAP 9 PM25',
+                            'NAEI SNAP 10 PM25',
+                            'NAEI SNAP 11 PM25',
+                           
+                           
+                            
+                           
+                           
+                           ]
 
 @app.route('/')
 def serve_react_app():
@@ -168,6 +317,8 @@ def predict():
         if conn:
             conn.close()
 
+    print(observation_data)
+
     # Apply changes to observation_data
     for feature, change in changes.items():
         if feature in observation_data.columns:
@@ -181,6 +332,10 @@ def predict():
 
     # Rename columns for consistency with the model
     observation_data = observation_data.rename(columns={"Grid ID": "UK Model Grid ID"})
+
+    print(model)
+    print(observation_data)
+    print(featureVectorColumnNames)
 
     # Make predictions
     updated_predictions = ei_models.make_concentration_predicitions_united_kingdom(
