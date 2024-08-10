@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "eii_backend_virtual_env"
+version = "0.1.0"
+description = "A backend application for EI Interactive"
+authors = ["Liam Berrisford"]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+flask = "3.0.3"
+flask-cors = "4.0.1"
+werkzeug = "3.0.3"
+geopandas = "1.0.1"
+reportlab = "4.2.2"
+python-dotenv = "1.0.1"
+environmental-insights = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
