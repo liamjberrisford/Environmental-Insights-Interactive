@@ -1,4 +1,4 @@
-name: geospatial
+name: eii_backend
 channels:
   - conda-forge
   - anaconda
@@ -8,4 +8,8 @@ dependencies:
   - flask-cors
   - werkzeug
   - geopandas
-
+  - pip
+  - reportlab
+  - pip:
+      - environmental-insights
+      - python-dotenv

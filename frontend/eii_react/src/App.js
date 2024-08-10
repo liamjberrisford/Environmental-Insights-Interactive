@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import './App.css';
 import DeckGL from '@deck.gl/react';
 import { GeoJsonLayer } from '@deck.gl/layers';
@@ -53,6 +53,24 @@ const INITIAL_VIEW_STATE = {
   bearing: 0
 };
 
+// Function to format air pollutant names with subscripts
+const formatPollutantName = (name) => {
+  switch (name) {
+    case 'no2':
+      return 'NO\u2082'; // NO₂
+    case 'o3':
+      return 'O\u2083'; // O₃
+    case 'pm10':
+      return 'PM\u2081\u2080'; // PM₁₀
+    case 'pm2.5':
+      return 'PM\u2082.\u2085'; // PM₂.₅
+    case 'so2':
+      return 'SO\u2082'; // SO₂
+    default:
+      return name;
+  }
+};
+
 function App() {
   const [selectedAirPollution, setSelectedAirPollution] = useState(airPollutionColumnNames[0]);
   const [selectedFeatureVector, setSelectedFeatureVector] = useState(featureVectorColumnNames[0]);
@@ -66,7 +84,32 @@ function App() {
   const [rightGeojson, setRightGeojson] = useState(null);
   const [updatedGeojson, setUpdatedGeojson] = useState(null);
   const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
-  const [mapState, setMapState] = useState('original'); // New state to track map state
+  const [mapState, setMapState] = useState('original');
+  const [backendUrl, setBackendUrl] = useState('http://127.0.0.1:3000');
+  const [backendStatus, setBackendStatus] = useState(false);
+
+  // Function to check the backend status
+  const checkBackendStatus = useCallback(() => {
+    fetch(`${backendUrl}/status`)
+      .then(response => {
+        if (response.ok) {
+          setBackendStatus(true);
+        } else {
+          setBackendStatus(false);
+        }
+      })
+      .catch(error => {
+        setBackendStatus(false);
+      });
+  }, [backendUrl]);
+
+  useEffect(() => {
+    if (backendUrl) {
+      checkBackendStatus();
+      const intervalId = setInterval(checkBackendStatus, 5000); // Check every 5 seconds
+      return () => clearInterval(intervalId); // Clear the interval when the component unmounts
+    }
+  }, [backendUrl, checkBackendStatus]);
 
   const updateViewState = (geojson) => {
     const bounds = bbox(geojson);
@@ -97,7 +140,7 @@ function App() {
   };
 
   const handleLoadFeatureVectorData = () => {
-    fetch(`/feature-vector?dataType=${selectedFeatureVector}&month=${selectedMonth}&day=${selectedDay}&hour=${selectedHour}`)
+    fetch(`${backendUrl}/feature-vector?dataType=${selectedFeatureVector}&month=${selectedMonth}&day=${selectedDay}&hour=${selectedHour}`)
       .then(response => response.json())
       .then(geojsonData => {
         console.log('Original GeoJSON:', geojsonData); // Log GeoJSON data
@@ -132,7 +175,7 @@ function App() {
   };
 
   const handleLoadAirPollutionData = () => {
-    fetch(`/air-pollution-concentrations?dataType=${selectedAirPollution}&month=${selectedMonth}&day=${selectedDay}&hour=${selectedHour}`)
+    fetch(`${backendUrl}/air-pollution-concentrations?dataType=${selectedAirPollution}&month=${selectedMonth}&day=${selectedDay}&hour=${selectedHour}`)
       .then(response => response.json())
       .then(geojsonData => {
         console.log('Air Pollution GeoJSON:', geojsonData); // Log GeoJSON data
@@ -179,7 +222,7 @@ function App() {
           labels,
           datasets: [
             {
-              label: `Baseline ${histogramColumnName} Count`,
+              label: `Baseline ${formatPollutantName(selectedAirPollution)} AQI Count`,
               data: bins,
               backgroundColor: 'rgba(255, 99, 132, 0.2)',
               borderColor: 'rgba(255, 99, 132, 1)',
@@ -203,7 +246,7 @@ function App() {
   const handleMakePrediction = () => {
     const changesStr = Object.entries(changes).map(([feature, value]) => `${feature}:${value}`).join(',');
 
-    const url = new URL('/predict', window.location.origin);
+    const url = new URL('/predict', backendUrl);
     url.searchParams.append('changes', changesStr);
     url.searchParams.append('air_pollutant', selectedAirPollution);
     url.searchParams.append('month', selectedMonth);
@@ -258,7 +301,7 @@ function App() {
 
         const updatedLabels = bins.map((_, index) => (index + 1).toString());
         const updatedDataset = {
-          label: `Modified Predicted ${histogramColumnName} Count`,
+          label: `Modified Predicted ${formatPollutantName(selectedAirPollution)} AQI Count`,
           data: bins,
           backgroundColor: 'rgba(54, 162, 235, 0.2)',
           borderColor: 'rgba(54, 162, 235, 1)',
@@ -278,6 +321,39 @@ function App() {
       });
   };
 
+  const handleGenerateReport = () => {
+    const reportData = {
+      selectedAirPollution,
+      selectedFeatureVector,
+      selectedMonth,
+      selectedDay,
+      selectedHour,
+      changes,
+      sliderValue
+    };
+
+    fetch(`${backendUrl}/generate-report`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(reportData)
+    })
+      .then(response => response.blob())
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'pdf_report.pdf');
+        document.body.appendChild(link);
+        link.click();
+        link.parentNode.removeChild(link);
+      })
+      .catch(error => {
+        console.error('Error generating report:', error);
+      });
+  };
+
   const debouncedSetViewState = debounce((newViewState) => {
     setViewState(newViewState);
   }, 200);
@@ -289,169 +365,187 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1 className="center-title">Environmental Insights Interactive</h1>
-        <div className="filters-container">
-          <h2 className="filters-title">Typical Day Selection</h2>
-          <div className="filters-box">
-            <div className="filter">
-              <label htmlFor="month">Month:</label>
-              <select
-                id="month"
-                name="month"
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-              >
-                {monthNames.map((name, index) => (
-                  <option key={name} value={index + 1}>{name}</option>
-                ))}
-              </select>
-            </div>
-            <div className="filter">
-              <label htmlFor="day">Day of the Week:</label>
-              <select
-                id="day"
-                name="day"
-                value={selectedDay}
-                onChange={(e) => setSelectedDay(e.target.value)}
-              >
-                {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
-                  <option key={day} value={day}>{day}</option>
-                ))}
-              </select>
-            </div>
-            <div className="filter">
-              <label htmlFor="hour">Hour:</label>
-              <select
-                id="hour"
-                name="hour"
-                value={selectedHour}
-                onChange={(e) => setSelectedHour(e.target.value)}
-              >
-                {Array.from({ length: 24 }, (_, i) => i).map(hour => (
-                  <option key={hour} value={`${hour.toString().padStart(2, '0')}:00`}>{`${hour.toString().padStart(2, '0')}:00`}</option>
-                ))}
-              </select>
-            </div>
-          </div>
+        <div className="backend-input-container">
+          <label htmlFor="backendUrl">Backend URL: </label>
+          <input
+            id="backendUrl"
+            type="text"
+            value={backendUrl}
+            onChange={(e) => setBackendUrl(e.target.value)}
+            style={{ backgroundColor: backendStatus ? 'green' : 'red' }}
+          />
+          <span className="backend-status-text">
+            {backendStatus ? 'Connected' : 'Disconnected'}
+          </span>
         </div>
-        <div className="maps-wrapper">
-          <div className="map-section">
-            <div className="map-container">
-              <DeckGL
-                initialViewState={viewState}
-                controller={true}
-                layers={leftGeojson ? leftGeojson : []}
-                style={{ height: '500px' }}
-                onViewStateChange={handleViewStateChange}
-              >
-                <Map mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json" />
-              </DeckGL>
-            </div>
-          </div>
-          <div className="map-section">
-            <div className="map-container">
-              <DeckGL
-                initialViewState={viewState}
-                controller={true}
-                layers={mapState === 'prediction' ? updatedGeojson : rightGeojson} // Conditionally render the correct layer
-                style={{ height: '500px' }}
-                onViewStateChange={handleViewStateChange}
-              >
-                <Map mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json" />
-              </DeckGL>
-            </div>
-          </div>
-        </div>
-        <div className="controls-wrapper">
-          <div className="controls-section">
-            <div className="controls">
-              <h2>Model Input</h2>
-              <label htmlFor="featureVector">Feature Vector:</label>
-              <select
-                id="featureVector"
-                name="featureVector"
-                value={selectedFeatureVector}
-                onChange={(e) => setSelectedFeatureVector(e.target.value)}
-              >
-                {featureVectorColumnNames.map(column => (
-                  <option key={column} value={column}>{column}</option>
-                ))}
-              </select>
-              <button onClick={handleLoadFeatureVectorData}>Load Feature Vector Data</button>
-              <div className="slider-container">
-                <label htmlFor="featureVectorSlider">Adjust Value (%):</label>
-                <input
-                  id="featureVectorSlider"
-                  type="range"
-                  min="-100"
-                  max="100"
-                  value={sliderValue}
-                  onChange={(e) => setSliderValue(e.target.value)}
-                />
-                <span>{sliderValue}%</span>
-              </div>
-              <button onClick={handleSelectChange}>Select Change</button>
-              <div className="selected-changes">
-                <h3>Selected Changes</h3>
-                {Object.entries(changes).map(([feature, value]) => (
-                  <div key={feature} className="selected-change">
-                    {feature}: {value}%
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="controls-section">
-            <div className="controls">
-              <h2>Model Output</h2>
-              <label htmlFor="airPollution">Air Pollution:</label>
-              <select
-                id="airPollution"
-                name="airPollution"
-                value={selectedAirPollution}
-                onChange={(e) => setSelectedAirPollution(e.target.value)}
-              >
-                {airPollutionColumnNames.map(column => (
-                  <option key={column} value={column}>{column}</option>
-                ))}
-              </select>
-              <button onClick={handleLoadAirPollutionData}>Load Air Pollution Data</button>
-              <button onClick={handleMakePrediction}>Make Prediction</button>
-            </div>
-          </div>
-        </div>
-        <div className="chart-container">
-          {chartData && (
-            <Bar
-              data={chartData}
-              options={{
-                plugins: {
-                  datalabels: {
-                    display: true,
-                    color: 'black',
-                    formatter: (value) => value
-                  }
-                },
-                scales: {
-                  y: {
-                    beginAtZero: true,
-                    title: {
-                      display: true,
-                      text: 'Count'
-                    }
-                  },
-                  x: {
-                    title: {
-                      display: true,
-                      text: 'AQI'
-                    }
-                  }
-                }
-              }}
-            />
-          )}
+        <div className="title-container">
+          <h1 className="center-title">Environmental Insights Interactive</h1>
         </div>
       </header>
+      <div className="filters-container">
+        <h2 className="filters-title">Typical Day Selection</h2>
+        <div className="filters-box">
+          <div className="filter">
+            <label htmlFor="month">Month:</label>
+            <select
+              id="month"
+              name="month"
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+            >
+              {monthNames.map((name, index) => (
+                <option key={name} value={index + 1}>{name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="filter">
+            <label htmlFor="day">Day of the Week:</label>
+            <select
+              id="day"
+              name="day"
+              value={selectedDay}
+              onChange={(e) => setSelectedDay(e.target.value)}
+            >
+              {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
+                <option key={day} value={day}>{day}</option>
+              ))}
+            </select>
+          </div>
+          <div className="filter">
+            <label htmlFor="hour">Hour:</label>
+            <select
+              id="hour"
+              name="hour"
+              value={selectedHour}
+              onChange={(e) => setSelectedHour(e.target.value)}
+            >
+              {Array.from({ length: 24 }, (_, i) => i).map(hour => (
+                <option key={hour} value={`${hour.toString().padStart(2, '0')}:00`}>{`${hour.toString().padStart(2, '0')}:00`}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+      <div className="maps-wrapper">
+        <div className="map-section">
+          <div className="map-container">
+            <DeckGL
+              initialViewState={viewState}
+              controller={true}
+              layers={leftGeojson ? leftGeojson : []}
+              style={{ height: '500px' }}
+              onViewStateChange={handleViewStateChange}
+            >
+              <Map mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json" />
+            </DeckGL>
+          </div>
+        </div>
+        <div className="map-section">
+          <div className="map-container">
+            <DeckGL
+              initialViewState={viewState}
+              controller={true}
+              layers={mapState === 'prediction' ? updatedGeojson : rightGeojson} // Conditionally render the correct layer
+              style={{ height: '500px' }}
+              onViewStateChange={handleViewStateChange}
+            >
+              <Map mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json" />
+            </DeckGL>
+          </div>
+        </div>
+      </div>
+      <div className="controls-wrapper">
+        <div className="controls-section">
+          <div className="controls">
+            <h2>Model Input</h2>
+            <label htmlFor="featureVector">Feature Vector:</label>
+            <select
+              id="featureVector"
+              name="featureVector"
+              value={selectedFeatureVector}
+              onChange={(e) => setSelectedFeatureVector(e.target.value)}
+            >
+              {featureVectorColumnNames.map(column => (
+                <option key={column} value={column}>{column}</option>
+              ))}
+            </select>
+            <button onClick={handleLoadFeatureVectorData}>Load Feature Vector Data</button>
+            <div className="slider-container">
+              <label htmlFor="featureVectorSlider">Adjust Value (%):</label>
+              <input
+                id="featureVectorSlider"
+                type="range"
+                min="-100"
+                max="100"
+                value={sliderValue}
+                onChange={(e) => setSliderValue(e.target.value)}
+              />
+              <span>{sliderValue}%</span>
+            </div>
+            <button onClick={handleSelectChange}>Select Change</button>
+            <div className="selected-changes">
+              <h3>Selected Changes</h3>
+              {Object.entries(changes).map(([feature, value]) => (
+                <div key={feature} className="selected-change">
+                  {feature}: {value}%
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="controls-section">
+          <div className="controls">
+            <h2>Model Output</h2>
+            <label htmlFor="airPollution">Air Pollution:</label>
+            <select
+              id="airPollution"
+              name="airPollution"
+              value={selectedAirPollution}
+              onChange={(e) => setSelectedAirPollution(e.target.value)}
+            >
+              {airPollutionColumnNames.map(column => (
+                <option key={column} value={column}>
+                  {formatPollutantName(column)}
+                </option>
+              ))}
+            </select>
+            <button onClick={handleLoadAirPollutionData}>Load Air Pollution Data</button>
+            <button onClick={handleMakePrediction}>Make Prediction</button>
+            <button onClick={handleGenerateReport}>Generate Report</button>
+          </div>
+        </div>
+      </div>
+      <div className="chart-container">
+        {chartData && (
+          <Bar
+            data={chartData}
+            options={{
+              plugins: {
+                datalabels: {
+                  display: true,
+                  color: 'black',
+                  formatter: (value) => value
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: {
+                    display: true,
+                    text: 'Count'
+                  }
+                },
+                x: {
+                  title: {
+                    display: true,
+                    text: 'AQI'
+                  }
+                }
+              }
+            }}
+          />
+        )}
+      </div>
     </div>
   );
 }

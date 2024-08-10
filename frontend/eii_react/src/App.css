@@ -155,3 +155,28 @@ select {
 .selected-change {
   margin-bottom: 5px;
 }
+
+.App-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+}
+
+.backend-input-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.backend-status-text {
+  margin-left: 10px;
+  font-weight: bold;
+  color: white;
+}
+
+.center-title {
+  text-align: center;
+  margin: 0;
+}
+

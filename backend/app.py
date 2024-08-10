@@ -1,21 +1,26 @@
-from flask import Flask, jsonify, request
-import os
-from flask_cors import CORS
 import geopandas as gpd
 import pandas as pd
 import sqlite3
 import pickle
 import lightgbm as lgb
+import generate_pdf
+
+from flask import Flask, jsonify, request, send_file
+import os
+from flask_cors import CORS
+import logging
+import generate_pdf
+
+app = Flask(__name__)
+CORS(app)
+logging.basicConfig(level=logging.INFO)
 
 import sys
 import os
 
-# Add the directory containing the module to the Python path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../environmental_insights')))
+from environmental_insights import air_pollution_functions as ei_air_pollution_functions
+from environmental_insights import models as ei_models
 
-# Import the module
-import air_pollution_functions as ei_air_pollution_functions
-import models as ei_models
 
 featureVectorColumnNames = ["Bicycle Score", "Car and Taxi Score", "Bus and Coach Score", "LGV Score", "HGV Score",
                             
@@ -178,6 +183,10 @@ def serve_react_app():
     
     return "Environmental Insights backend"
 
+@app.route('/status', methods=['GET'])
+def status():
+    return jsonify({"status": "Server is running"}), 200
+
 @app.route('/air-pollution-concentrations', methods=['POST', 'GET'])
 def geojson_data():
     # Extract the parameters from the query
@@ -328,17 +337,16 @@ def predict():
      # Load the model
     model_type, model_dataset = "0.5", "All"
     
-    model_filepath = "models/uk/dataset_"+model_dataset+"_quantile_regression_"+model_type+"_air_pollutant_"+air_pollutant+".pkl"
+    model_filepath = "models/uk/dataset_"+model_dataset+"_quantile_regression_"+model_type+"_air_pollutant_"+air_pollutant+".txt"
     print(model_filepath)
-    with open(model_filepath, "rb") as f:  # Python 3: open(..., 'rb')
-        climate_projection_model = pickle.load(f)
+    model = lgb.Booster(model_file=model_filepath)
 
     # Rename columns for consistency with the model
     observation_data = observation_data.rename(columns={"Grid ID": "UK Model Grid ID"})
 
     # Make predictions
     updated_predictions = ei_models.make_concentration_predicitions_united_kingdom(
-        climate_projection_model, observation_data, featureVectorColumnNames
+        model, observation_data, featureVectorColumnNames
     )
 
     # Rename columns back for merging
@@ -357,6 +365,57 @@ def predict():
     # Convert the GeoDataFrame to GeoJSON
     updated_geojson = merged_data.to_json()
     return jsonify({"updated_geojson": updated_geojson})
+
+@app.route('/generate-report', methods=['POST'])
+def generate_report():
+    try:
+        # Extract the data from the request
+        data = request.get_json()
+
+        selected_air_pollution = data.get('selectedAirPollution')
+        selected_feature_vector = data.get('selectedFeatureVector')
+        selected_month = data.get('selectedMonth')
+        selected_day = data.get('selectedDay')
+        selected_hour = data.get('selectedHour')
+        changes = data.get('changes')
+        slider_value = data.get('sliderValue')
+
+        # Log the received data (for debugging purposes)
+        app.logger.info(f"Selected Air Pollution: {selected_air_pollution}")
+        app.logger.info(f"Selected Feature Vector: {selected_feature_vector}")
+        app.logger.info(f"Selected Month: {selected_month}")
+        app.logger.info(f"Selected Day: {selected_day}")
+        app.logger.info(f"Selected Hour: {selected_hour}")
+        app.logger.info(f"Changes: {changes}")
+        app.logger.info(f"Slider Value: {slider_value}")
+
+        # Create a data dictionary for processing
+        report_data = {
+            'selectedAirPollution': selected_air_pollution,
+            'selectedFeatureVector': selected_feature_vector,
+            'selectedMonth': selected_month,
+            'selectedDay': selected_day,
+            'selectedHour': selected_hour,
+            'changes': changes,
+            'sliderValue': slider_value
+        }
+
+        # Process the data and generate the report
+        report = generate_pdf.process_data(report_data)
+
+        # Generate the PDF report
+        pdf_filename = "pdf_report.pdf"
+        generate_pdf.generate_pdf_report(report, pdf_filename)
+
+        # Check if the PDF file is generated correctly
+        if not os.path.exists(pdf_filename):
+            raise FileNotFoundError(f"PDF file {pdf_filename} not found.")
+
+        # Return the PDF file
+        return send_file(pdf_filename, as_attachment=True)
+    except Exception as e:
+        app.logger.error(f"Error generating report: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route('/num-tables', methods=['GET'])
@@ -377,6 +436,6 @@ def num_tables():
     
     return jsonify({"num_tables": num_tables, "table_names": table_names})
 
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == '__main__': 
+    app.run(port=3000)
 
