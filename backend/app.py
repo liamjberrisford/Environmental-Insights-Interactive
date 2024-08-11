@@ -212,6 +212,8 @@ def geojson_data():
 
     try:
         air_pollution_concentrations = pd.read_sql_query(sql_query, conn)
+        print("Air Pollution Concentrations")
+        print(air_pollution_concentrations)
     except Exception as e:
         print(f"Error reading table {table_name}: {e}")
         conn.close()

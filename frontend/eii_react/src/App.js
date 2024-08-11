@@ -32,13 +32,27 @@ const airPollutionColumnNames = [
   'no2', 'o3', 'pm10', 'pm2.5', 'so2'
 ];
 
-const featureVectorColumnNames = [
-  "Bicycle Score", "Car and Taxi Score", "Bus and Coach Score", "LGV Score", "HGV Score",
-  '100m_u_component_of_wind', '100m_v_component_of_wind', '10m_u_component_of_wind',
-  '10m_v_component_of_wind', '2m_dewpoint_temperature', '2m_temperature',
-  'boundary_layer_height', 'downward_uv_radiation_at_the_surface', 'instantaneous_10m_wind_gust',
-  'surface_pressure', 'total_column_rain_water'
-];
+// Mapping of feature vector keys to display names
+const featureVectorDisplayNames = {
+  "Bicycle Score": "Bicycle Score",
+  "Car and Taxi Score": "Car and Taxi Score",
+  "Bus and Coach Score": "Bus and Coach Score",
+  "LGV Score": "LGV Score",
+  "HGV Score": "HGV Score",
+  '100m_u_component_of_wind': '100m U-Component of Wind',
+  '100m_v_component_of_wind': '100m V-Component of Wind',
+  '10m_u_component_of_wind': '10m U-Component of Wind',
+  '10m_v_component_of_wind': '10m V-Component of Wind',
+  '2m_dewpoint_temperature': '2m Dewpoint Temperature',
+  '2m_temperature': '2m Temperature',
+  'boundary_layer_height': 'Boundary Layer Height',
+  'downward_uv_radiation_at_the_surface': 'Downward UV Radiation at Surface',
+  'instantaneous_10m_wind_gust': 'Instantaneous 10m Wind Gust',
+  'surface_pressure': 'Surface Pressure',
+  'total_column_rain_water': 'Total Column Rain Water'
+};
+
+const featureVectorColumnNames = Object.keys(featureVectorDisplayNames);
 
 const monthNames = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -107,6 +121,7 @@ function App() {
   }, [backendUrl]);
 
   useEffect(() => {
+    document.title = "EI Interactive";  // Set tab title
     if (backendUrl) {
       checkBackendStatus();
       const intervalId = setInterval(checkBackendStatus, 5000); // Check every 5 seconds
@@ -456,7 +471,7 @@ function App() {
               onChange={(e) => setSelectedFeatureVector(e.target.value)}
             >
               {featureVectorColumnNames.map(column => (
-                <option key={column} value={column}>{column}</option>
+                <option key={column} value={column}>{featureVectorDisplayNames[column]}</option>
               ))}
             </select>
             <button onClick={handleLoadFeatureVectorData}>Load Feature Vector Data</button>
@@ -477,7 +492,7 @@ function App() {
               <h3>Selected Changes</h3>
               {Object.entries(changes).map(([feature, value]) => (
                 <div key={feature} className="selected-change">
-                  {feature}: {value}%
+                  {featureVectorDisplayNames[feature]}: {value}%
                 </div>
               ))}
             </div>
