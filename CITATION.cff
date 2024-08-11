@@ -1,0 +1,20 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Environmental Insights Interactive
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Liam
+    family-names: Berrisford
+    email: liberrisford@gmail.com
+    affiliation: University of Exeter
+    orcid: 'https://orcid.org/0000-0001-6578-3497'
+repository-code: 'https://github.com/berrli/Environmental-Insights-Interactive'
+keywords:
+  - Air Pollution
+  - 'Machine Learning '
+  - Predictive Analytics
