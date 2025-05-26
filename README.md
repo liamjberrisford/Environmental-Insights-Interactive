@@ -4,7 +4,7 @@ Environmental Insights Interactive is a web application designed to provide deta
 
 This is a demonstration of the python package [Environmental Insights](https://pypi.org/project/environmental-insights/). 
 
-The online frontend can be found [here](https://berrli.github.io/Environmental-Insights-Interactive/), and the backend [here](https://liberrisford.pythonanywhere.com).
+The online frontend can be found [here](https://liamjberrisford.github.io/Environmental-Insights-Interactive/), and the backend [here](https://liberrisford.pythonanywhere.com).
 
 ## Project Structure
 
