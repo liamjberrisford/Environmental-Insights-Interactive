@@ -1,3 +1,5 @@
+> **Note:** Please note that this project is not currently under active development; a reduced-functionality backend is being maintained to minimize costs.
+
 # Environmental Insights Interactive
 
 Environmental Insights Interactive is a web application designed to provide detailed environmental insights through interactive data visualization and analysis tools. This project includes both backend and frontend components, developed using Python and React, respectively.
